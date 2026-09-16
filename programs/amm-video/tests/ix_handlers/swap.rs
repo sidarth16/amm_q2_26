@@ -20,6 +20,9 @@ pub fn create_swap_ix(
     config: Pubkey,
     vault_x: Pubkey,
     vault_y: Pubkey,
+    treasury: Pubkey,
+    treasury_x: Pubkey,
+    treasury_y: Pubkey,
 ) -> Instruction {
     let user = payer.pubkey();
     let user_x = associated_token::get_associated_token_address(&user, &mint_x);
@@ -41,6 +44,9 @@ pub fn create_swap_ix(
             mint_lp,
             vault_x,
             vault_y,
+            treasury,
+            treasury_x,
+            treasury_y,
             user_x,
             user_y,
             token_program: TOKEN_PROGRAM_ID,
