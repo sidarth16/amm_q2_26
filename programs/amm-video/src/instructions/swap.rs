@@ -37,6 +37,21 @@ pub struct Swap<'info> {
         associated_token::authority = config,
     )]
     pub vault_y: Box<Account<'info, TokenAccount>>,
+    /// CHECK: Validated as the deterministic treasury PDA for this config.
+    #[account(seeds = [b"treasury", config.key().as_ref()], bump)]
+    pub treasury: UncheckedAccount<'info>,
+    #[account(
+        mut,
+        associated_token::mint = mint_x,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_x: Box<Account<'info, TokenAccount>>,
+    #[account(
+        mut,
+        associated_token::mint = mint_y,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_y: Box<Account<'info, TokenAccount>>,
     #[account(
         mut,
         associated_token::mint = mint_x,
@@ -75,7 +90,13 @@ impl<'info> Swap<'info> {
             .swap(p, amount, min)
             .map_err(|_| AmmError::SlippageExceeded)?;
 
-        self.deposit_tokens(is_x, swap_result.deposit)?;
+        let vault_amount = swap_result
+            .deposit
+            .checked_sub(swap_result.fee)
+            .ok_or(AmmError::Underflow)?;
+
+        self.deposit_tokens(is_x, vault_amount)?;
+        self.collect_fee(is_x, swap_result.fee)?;
         self.withdraw_tokens(is_x, swap_result.withdraw)
     }
 
@@ -129,6 +150,35 @@ impl<'info> Swap<'info> {
                     &self.config.seed.to_le_bytes(),
                     &[self.config.config_bump],
                 ]],
+            ),
+            amount,
+        )
+    }
+
+    pub fn collect_fee(&mut self, is_x: bool, amount: u64) -> Result<()> {
+        if amount == 0 {
+            return Ok(());
+        }
+
+        let (from, to) = match is_x {
+            true => (
+                self.user_x.to_account_info(),
+                self.treasury_x.to_account_info(),
+            ),
+            false => (
+                self.user_y.to_account_info(),
+                self.treasury_y.to_account_info(),
+            ),
+        };
+
+        transfer(
+            CpiContext::new(
+                self.token_program.key(),
+                Transfer {
+                    from,
+                    to,
+                    authority: self.user.to_account_info(),
+                },
             ),
             amount,
         )

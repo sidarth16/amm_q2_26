@@ -36,6 +36,23 @@ pub struct Initialize<'info> {
         associated_token::authority = config,
     )]
     pub vault_y: Account<'info, TokenAccount>,
+    /// CHECK: This pool-specific PDA only owns the canonical treasury token accounts.
+    #[account(seeds = [b"treasury", config.key().as_ref()], bump)]
+    pub treasury: UncheckedAccount<'info>,
+    #[account(
+        init,
+        payer = initializer,
+        associated_token::mint = mint_x,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_x: Account<'info, TokenAccount>,
+    #[account(
+        init,
+        payer = initializer,
+        associated_token::mint = mint_y,
+        associated_token::authority = treasury,
+    )]
+    pub treasury_y: Account<'info, TokenAccount>,
     #[account(
         init,
         payer = initializer,
