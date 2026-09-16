@@ -9,7 +9,7 @@ pub use constants::*;
 pub use instructions::*;
 pub use state::*;
 
-declare_id!("6KoUjko5kqLHaF31gdWGBihf8Pw8dUNte2hBpBEJveVe");
+declare_id!("Aum51tDvnUVrJTQhPoZSpLnmmmkdecQJjCVMtbeiuGLL");
 
 #[program]
 pub mod amm_video {
